@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { getToken } from './auth';
+import { getToken, getUserId, getUsername } from './auth';
 import type { Client, IMessage, IFrame } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
@@ -21,6 +21,7 @@ export const useWebSocket = (url: string, chatRoomId: string): WebSocketHook => 
   const [isConnected, setIsConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
   const subscriptionRef = useRef<any>(null);
+  const roomSubscriptionRef = useRef<any>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -58,12 +59,26 @@ export const useWebSocket = (url: string, chatRoomId: string): WebSocketHook => 
             if (subscriptionRef.current) {
               subscriptionRef.current.unsubscribe();
             }
+            if (roomSubscriptionRef.current) {
+              roomSubscriptionRef.current.unsubscribe();
+            }
             
-            subscriptionRef.current = client.current?.subscribe(`/topic/room/${chatRoomId}`, (message: IMessage) => {
+            subscriptionRef.current = client.current?.subscribe(`/user/queue/messages`, (message: IMessage) => {
               if (!mounted) return;
               try {
                 const data: WebSocketMessage = JSON.parse(message.body);
-                console.log('Received message:', data);
+                console.log('Received personal message:', data);
+                setLastMessage(data);
+              } catch (error) {
+                console.error('Failed to parse STOMP message:', error);
+              }
+            });
+
+            roomSubscriptionRef.current = client.current?.subscribe(`/topic/room/${chatRoomId}`, (message: IMessage) => {
+              if (!mounted) return;
+              try {
+                const data: WebSocketMessage = JSON.parse(message.body);
+                console.log('Received room message:', data);
                 setLastMessage(data);
               } catch (error) {
                 console.error('Failed to parse STOMP message:', error);
@@ -98,6 +113,9 @@ export const useWebSocket = (url: string, chatRoomId: string): WebSocketHook => 
       if (subscriptionRef.current) {
         subscriptionRef.current.unsubscribe();
       }
+      if (roomSubscriptionRef.current) {
+        roomSubscriptionRef.current.unsubscribe();
+      }
       if (client.current) {
         client.current.deactivate();
       }
@@ -110,6 +128,7 @@ export const useWebSocket = (url: string, chatRoomId: string): WebSocketHook => 
         destination: '/app/send',
         body: JSON.stringify({
           chatRoomId,
+          sender: getUserId(),
           message: message.content
         })
       });

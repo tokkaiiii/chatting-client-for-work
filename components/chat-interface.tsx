@@ -55,7 +55,7 @@ export default function ChatInterface({ currentUser, chatRoomName, chatRoomId, o
       const timeString = `오후 ${now.getHours()}:${now.getMinutes().toString().padStart(2, "0")}`
       
       const newMsg: Message = {
-        id: messages.length + 1,
+        id: Date.now(), // 고유한 ID 생성
         user: lastMessage.sender,
         avatar: "/placeholder.svg?height=40&width=40",
         message: lastMessage.content,
@@ -66,12 +66,12 @@ export default function ChatInterface({ currentUser, chatRoomName, chatRoomId, o
       
       setMessages(prev => [...prev, newMsg])
     }
-  }, [lastMessage, currentUser, messages.length])
+  }, [lastMessage, currentUser]) // messages.length 제거
 
   // 채팅방이 변경될 때마다 메시지 초기화
   useEffect(() => {
     setMessages([])
-  }, [chatRoomName])
+  }, [chatRoomId]) // chatRoomName 대신 chatRoomId 사용
 
   // 새 메시지가 추가될 때마다 스크롤 아래로 이동
   useEffect(() => {
@@ -104,7 +104,7 @@ export default function ChatInterface({ currentUser, chatRoomName, chatRoomId, o
       // 이미지 메시지 전송
       const imageUrl = URL.createObjectURL(selectedImage)
       const message: Message = {
-        id: messages.length + 1,
+        id: Date.now(), // 고유한 ID 생성
         user: currentUser,
         avatar: "/placeholder.svg?height=40&width=40",
         imageUrl,
@@ -125,7 +125,7 @@ export default function ChatInterface({ currentUser, chatRoomName, chatRoomId, o
       
       // 메시지를 먼저 UI에 표시
       const message: Message = {
-        id: messages.length + 1,
+        id: Date.now(), // 고유한 ID 생성
         user: currentUser,
         avatar: "/placeholder.svg?height=40&width=40",
         message: newMessage,

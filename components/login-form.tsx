@@ -17,7 +17,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Eye, EyeOff, MessageCircle } from "lucide-react";
 import { config } from "@/lib/config";
-import { setToken, setUsername } from "@/lib/auth";
+import { setToken, setUsername, setUserId } from "@/lib/auth";
 interface LoginFormProps {
   onLogin: (username: string) => void;
   onSwitchToSignup: () => void;
@@ -63,6 +63,7 @@ export default function LoginForm({
       const tokenData = await responseToken.json();
       setToken(tokenData.accessToken);
       setUsername(data.username);
+      setUserId(data.id);
       onLogin(data.username);
     } catch (error) {
       console.error("Login error:", error);

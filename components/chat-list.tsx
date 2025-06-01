@@ -69,23 +69,38 @@ export default function ChatList({
   );
 
   const onNewChat = async () => {
-    const response = await fetch(`${config.apiUrl}/chat/rooms`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${getToken()}`,
-      },
-      body: JSON.stringify({
-        roomName: `${getUsername()}의 새로운 채팅`,
-      }),
-    });
+    try {
+      const response = await fetch(`${config.apiUrl}/chat/rooms`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify({
+          roomName: `${getUsername()}의 새로운 채팅`,
+        }),
+      });
 
-    if (response.ok) {
-      const data = await response.json();
-      console.log(data);
-      onSelectChat(data.roomName, data.roomName);
-    } else {
-      console.error("채팅 생성 실패");
+      if (response.ok) {
+        const data = await response.json();
+        // 새로 생성된 채팅방을 목록에 추가
+        setChatRooms(prev => [{
+          chatRoomId: data.chatRoomId,
+          roomName: data.roomName,
+          avatar: "",
+          lastMessage: "",
+          lastMessageDateTime: new Date().toISOString(),
+          unreadMessageCount: 0,
+          online: false
+        }, ...prev]);
+        
+        // 새로 생성된 채팅방으로 이동
+        onSelectChat(data.roomName, data.chatRoomId);
+      } else {
+        console.error("채팅 생성 실패");
+      }
+    } catch (error) {
+      console.error("채팅방 생성 중 오류 발생:", error);
     }
   };
 
