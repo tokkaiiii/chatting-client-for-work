@@ -10,6 +10,8 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Send, MoreVertical, Phone, Video, ArrowLeft, ImageIcon } from "lucide-react"
 import ImageModal from "@/components/image-modal"
 import ImagePreview from "@/components/image-preview"
+import { useWebSocket, WebSocketMessage } from "@/lib/websocket"
+import { config } from "@/lib/config"
 
 interface Message {
   id: number
@@ -24,214 +26,52 @@ interface Message {
 
 interface ChatInterfaceProps {
   currentUser: string
-  chatId: string
+  chatRoomName: string
+  chatRoomId: string
   onBack: () => void
 }
 
-export default function ChatInterface({ currentUser, chatId, onBack }: ChatInterfaceProps) {
+export default function ChatInterface({ currentUser, chatRoomName, chatRoomId, onBack }: ChatInterfaceProps) {
   const [newMessage, setNewMessage] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imageModalOpen, setImageModalOpen] = useState(false)
   const [modalImageUrl, setModalImageUrl] = useState("")
   const [modalImageAlt, setModalImageAlt] = useState("")
+  const [messages, setMessages] = useState<Message[]>([])
 
-  // 채팅방 ID에 따라 다른 대화 상대와 메시지 표시
-  const chatData: Record<string, { contact: string; messages: Message[] }> = {
-    chat1: {
-      contact: "Alice",
-      messages: [
-        {
-          id: 1,
-          user: "Alice",
-          avatar: "/placeholder.svg?height=40&width=40",
-          message: "안녕하세요! 오늘 회의 준비는 어떻게 되고 있나요?",
-          time: "오후 2:30",
-          isMe: false,
-          type: "text",
-        },
-        {
-          id: 2,
-          user: currentUser,
-          avatar: "/placeholder.svg?height=40&width=40",
-          message: "네, 거의 다 준비됐어요. 자료 정리만 조금 더 하면 될 것 같습니다.",
-          time: "오후 2:32",
-          isMe: true,
-          type: "text",
-        },
-        {
-          id: 3,
-          user: "Alice",
-          avatar: "/placeholder.svg?height=40&width=40",
-          imageUrl: "/placeholder.svg?height=300&width=400",
-          time: "오후 2:33",
-          isMe: false,
-          type: "image",
-        },
-        {
-          id: 4,
-          user: "Alice",
-          avatar: "/placeholder.svg?height=40&width=40",
-          message: "좋네요! 혹시 프레젠테이션 슬라이드도 확인해보셨나요?",
-          time: "오후 2:33",
-          isMe: false,
-          type: "text",
-        },
-        {
-          id: 5,
-          user: currentUser,
-          avatar: "/placeholder.svg?height=40&width=40",
-          message: "네, 어제 검토했습니다. 몇 가지 수정사항이 있어서 오늘 오전에 업데이트했어요.",
-          time: "오후 2:35",
-          isMe: true,
-          type: "text",
-        },
-        {
-          id: 6,
-          user: "Alice",
-          avatar: "/placeholder.svg?height=40&width=40",
-          message: "완벽하네요! 그럼 3시에 회의실에서 뵙겠습니다. 😊",
-          time: "오후 2:36",
-          isMe: false,
-          type: "text",
-        },
-      ],
-    },
-    chat2: {
-      contact: "Bob",
-      messages: [
-        {
-          id: 1,
-          user: "Bob",
-          avatar: "/placeholder.svg?height=40&width=40",
-          message: "안녕하세요, 프로젝트 진행 상황이 어떻게 되나요?",
-          time: "오전 10:15",
-          isMe: false,
-          type: "text",
-        },
-        {
-          id: 2,
-          user: currentUser,
-          avatar: "/placeholder.svg?height=40&width=40",
-          message: "현재 70% 정도 완료되었습니다. 이번 주 내로 초안을 보내드릴게요.",
-          time: "오전 10:30",
-          isMe: true,
-          type: "text",
-        },
-        {
-          id: 3,
-          user: "Bob",
-          avatar: "/placeholder.svg?height=40&width=40",
-          message: "좋습니다. 프로젝트 마감일이 언제였죠?",
-          time: "오전 11:20",
-          isMe: false,
-          type: "text",
-        },
-      ],
-    },
-    chat3: {
-      contact: "Charlie",
-      messages: [
-        {
-          id: 1,
-          user: "Charlie",
-          avatar: "/placeholder.svg?height=40&width=40",
-          message: "다음 주 일정 확인해 주세요.",
-          time: "어제",
-          isMe: false,
-          type: "text",
-        },
-        {
-          id: 2,
-          user: currentUser,
-          avatar: "/placeholder.svg?height=40&width=40",
-          message: "네, 확인했습니다. 화요일 오후에 미팅 가능합니다.",
-          time: "어제",
-          isMe: true,
-          type: "text",
-        },
-        {
-          id: 3,
-          user: "Charlie",
-          avatar: "/placeholder.svg?height=40&width=40",
-          message: "주말에 팀 회식 어떠세요?",
-          time: "어제",
-          isMe: false,
-          type: "text",
-        },
-      ],
-    },
-    chat4: {
-      contact: "Diana",
-      messages: [
-        {
-          id: 1,
-          user: "Diana",
-          avatar: "/placeholder.svg?height=40&width=40",
-          message: "발표 자료 검토 부탁드립니다.",
-          time: "어제",
-          isMe: false,
-          type: "text",
-        },
-      ],
-    },
-    chat5: {
-      contact: "Edward",
-      messages: [
-        {
-          id: 1,
-          user: "Edward",
-          avatar: "/placeholder.svg?height=40&width=40",
-          message: "새 기능 개발 일정 공유해 주세요.",
-          time: "월요일",
-          isMe: false,
-          type: "text",
-        },
-      ],
-    },
-    chat6: {
-      contact: "팀 프로젝트",
-      messages: [
-        {
-          id: 1,
-          user: "Alice",
-          avatar: "/placeholder.svg?height=40&width=40",
-          message: "다들 주간 보고서 작성하셨나요?",
-          time: "월요일",
-          isMe: false,
-          type: "text",
-        },
-        {
-          id: 2,
-          user: "Bob",
-          avatar: "/placeholder.svg?height=40&width=40",
-          message: "네, 제출했습니다.",
-          time: "월요일",
-          isMe: false,
-          type: "text",
-        },
-        {
-          id: 3,
-          user: "Charlie",
-          avatar: "/placeholder.svg?height=40&width=40",
-          message: "다음 회의는 금요일 오후 2시입니다.",
-          time: "월요일",
-          isMe: false,
-          type: "text",
-        },
-      ],
-    },
-  }
+  // WebSocket 연결
+  const { sendMessage, lastMessage, isConnected } = useWebSocket(`${config.wsUrl}`, chatRoomId)
 
-  const currentChat = chatData[chatId] || { contact: "Unknown", messages: [] }
-  const [messages, setMessages] = useState<Message[]>(currentChat.messages)
-
-  // 채팅방이 변경될 때마다 메시지 업데이트
+  // WebSocket 메시지 수신 처리
   useEffect(() => {
-    if (chatData[chatId]) {
-      setMessages(chatData[chatId].messages)
+    if (lastMessage) {
+      // 자신이 보낸 메시지는 이미 UI에 표시되어 있으므로 무시
+      if (lastMessage.sender === currentUser) {
+        return;
+      }
+
+      const now = new Date()
+      const timeString = `오후 ${now.getHours()}:${now.getMinutes().toString().padStart(2, "0")}`
+      
+      const newMsg: Message = {
+        id: messages.length + 1,
+        user: lastMessage.sender,
+        avatar: "/placeholder.svg?height=40&width=40",
+        message: lastMessage.content,
+        time: timeString,
+        isMe: lastMessage.sender === currentUser,
+        type: "text",
+      }
+      
+      setMessages(prev => [...prev, newMsg])
     }
-  }, [chatId])
+  }, [lastMessage, currentUser, messages.length])
+
+  // 채팅방이 변경될 때마다 메시지 초기화
+  useEffect(() => {
+    setMessages([])
+  }, [chatRoomName])
 
   // 새 메시지가 추가될 때마다 스크롤 아래로 이동
   useEffect(() => {
@@ -261,7 +101,7 @@ export default function ChatInterface({ currentUser, chatId, onBack }: ChatInter
     const timeString = `오후 ${now.getHours()}:${now.getMinutes().toString().padStart(2, "0")}`
 
     if (selectedImage) {
-      // Send image message
+      // 이미지 메시지 전송
       const imageUrl = URL.createObjectURL(selectedImage)
       const message: Message = {
         id: messages.length + 1,
@@ -272,10 +112,18 @@ export default function ChatInterface({ currentUser, chatId, onBack }: ChatInter
         isMe: true,
         type: "image",
       }
-      setMessages((prev) => [...prev, message])
+      setMessages(prev => [...prev, message])
       setSelectedImage(null)
     } else if (newMessage.trim()) {
-      // Send text message
+      // 텍스트 메시지 전송
+      const wsMessage: WebSocketMessage = {
+        type: "CHAT",
+        sender: currentUser,
+        content: newMessage,
+        timestamp: new Date().toISOString(),
+      }
+      
+      // 메시지를 먼저 UI에 표시
       const message: Message = {
         id: messages.length + 1,
         user: currentUser,
@@ -285,7 +133,10 @@ export default function ChatInterface({ currentUser, chatId, onBack }: ChatInter
         isMe: true,
         type: "text",
       }
-      setMessages((prev) => [...prev, message])
+      setMessages(prev => [...prev, message])
+      
+      // WebSocket으로 메시지 전송
+      sendMessage(wsMessage)
       setNewMessage("")
     }
   }
@@ -300,12 +151,12 @@ export default function ChatInterface({ currentUser, chatId, onBack }: ChatInter
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <Avatar>
-              <AvatarImage src="/placeholder.svg?height=40&width=40" alt={currentChat.contact} />
-              <AvatarFallback>{currentChat.contact[0]}</AvatarFallback>
+              <AvatarImage src="/placeholder.svg?height=40&width=40" alt={chatRoomName} />
+              <AvatarFallback>{chatRoomName[0]}</AvatarFallback>
             </Avatar>
             <div>
-              <h2 className="text-lg font-semibold">{currentChat.contact}</h2>
-              <p className="text-sm text-muted-foreground">온라인</p>
+              <h2 className="text-lg font-semibold">{chatRoomName}</h2>
+              <p className="text-sm text-muted-foreground">{isConnected ? "온라인" : "오프라인"}</p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -329,10 +180,10 @@ export default function ChatInterface({ currentUser, chatId, onBack }: ChatInter
             key={message.id}
             className={`flex items-start space-x-3 ${message.isMe ? "flex-row-reverse space-x-reverse" : ""}`}
           >
-            <Avatar className="w-8 h-8">
+            {/* <Avatar className="w-8 h-8">
               <AvatarImage src={message.avatar || "/placeholder.svg"} alt={message.user} />
               <AvatarFallback>{message.isMe ? currentUser[0]?.toUpperCase() : message.user[0]}</AvatarFallback>
-            </Avatar>
+            </Avatar> */}
             <div
               className={`flex flex-col space-y-1 max-w-xs lg:max-w-md ${message.isMe ? "items-end" : "items-start"}`}
             >
@@ -382,9 +233,9 @@ export default function ChatInterface({ currentUser, chatId, onBack }: ChatInter
               autoComplete="off"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              disabled={!!selectedImage}
+              disabled={!!selectedImage || !isConnected}
             />
-            <Button type="submit" size="icon" disabled={!newMessage.trim() && !selectedImage}>
+            <Button type="submit" size="icon" disabled={(!newMessage.trim() && !selectedImage) || !isConnected}>
               <Send className="h-4 w-4" />
               <span className="sr-only">Send message</span>
             </Button>

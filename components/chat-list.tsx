@@ -1,91 +1,93 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Search, LogOut, Plus, Settings } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+import { useState, useEffect } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Search, LogOut, Plus, Settings } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { config } from "@/lib/config";
+import { getToken, getUsername } from "@/lib/auth";
 
 interface ChatRoom {
-  id: string
-  name: string
-  avatar: string
-  lastMessage: string
-  time: string
-  unread: number
-  online: boolean
+  chatRoomId: string;
+  roomName: string;
+  avatar: string;
+  lastMessage: string;
+  lastMessageDateTime: string;
+  unreadMessageCount: number;
+  online: boolean;
 }
 
 interface ChatListProps {
-  username: string
-  onSelectChat: (chatId: string) => void
-  onLogout: () => void
+  username: string;
+  onSelectChat: (chatRoomName: string, chatRoomId: string) => void;
+  onLogout: () => void;
 }
 
-export default function ChatList({ username, onSelectChat, onLogout }: ChatListProps) {
-  const [searchQuery, setSearchQuery] = useState("")
+export default function ChatList({
+  username,
+  onSelectChat,
+  onLogout,
+}: ChatListProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // 샘플 채팅방 데이터
-  const chatRooms: ChatRoom[] = [
-    {
-      id: "chat1",
-      name: "Alice",
-      avatar: "/placeholder.svg?height=40&width=40",
-      lastMessage: "완벽하네요! 그럼 3시에 회의실에서 뵙겠습니다. 😊",
-      time: "오후 2:36",
-      unread: 0,
-      online: true,
-    },
-    {
-      id: "chat2",
-      name: "Bob",
-      avatar: "/placeholder.svg?height=40&width=40",
-      lastMessage: "프로젝트 마감일이 언제였죠?",
-      time: "오전 11:20",
-      unread: 2,
-      online: true,
-    },
-    {
-      id: "chat3",
-      name: "Charlie",
-      avatar: "/placeholder.svg?height=40&width=40",
-      lastMessage: "주말에 팀 회식 어떠세요?",
-      time: "어제",
-      unread: 0,
-      online: false,
-    },
-    {
-      id: "chat4",
-      name: "Diana",
-      avatar: "/placeholder.svg?height=40&width=40",
-      lastMessage: "발표 자료 검토 부탁드립니다.",
-      time: "어제",
-      unread: 3,
-      online: false,
-    },
-    {
-      id: "chat5",
-      name: "Edward",
-      avatar: "/placeholder.svg?height=40&width=40",
-      lastMessage: "새 기능 개발 일정 공유해 주세요.",
-      time: "월요일",
-      unread: 0,
-      online: false,
-    },
-    {
-      id: "chat6",
-      name: "팀 프로젝트",
-      avatar: "/placeholder.svg?height=40&width=40",
-      lastMessage: "Charlie: 다음 회의는 금요일 오후 2시입니다.",
-      time: "월요일",
-      unread: 0,
-      online: false,
-    },
-  ]
+  useEffect(() => {
+    const fetchChatRooms = async () => {
+      try {
+        const response = await fetch(`${config.apiUrl}/chat/rooms`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("채팅방 목록을 불러오는데 실패했습니다");
+        }
+
+        const data = await response.json();
+        setChatRooms(data);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다"
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchChatRooms();
+  }, []);
 
   // 검색 기능
-  const filteredChatRooms = chatRooms.filter((room) => room.name.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredChatRooms = chatRooms.filter((room) =>
+    room.roomName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const onNewChat = async () => {
+    const response = await fetch(`${config.apiUrl}/chat/rooms`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${getToken()}`,
+      },
+      body: JSON.stringify({
+        roomName: `${getUsername()}의 새로운 채팅`,
+      }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log(data);
+      onSelectChat(data.roomName, data.roomName);
+    } else {
+      console.error("채팅 생성 실패");
+    }
+  };
 
   return (
     <div className="flex flex-col h-screen max-w-md mx-auto bg-background border-r">
@@ -93,7 +95,10 @@ export default function ChatList({ username, onSelectChat, onLogout }: ChatListP
       <div className="p-4 border-b flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <Avatar>
-            <AvatarImage src="/placeholder.svg?height=40&width=40" alt={username} />
+            <AvatarImage
+              src="/placeholder.svg?height=40&width=40"
+              alt={username}
+            />
             <AvatarFallback>{username[0]?.toUpperCase()}</AvatarFallback>
           </Avatar>
           <h2 className="font-semibold">{username}</h2>
@@ -123,18 +128,27 @@ export default function ChatList({ username, onSelectChat, onLogout }: ChatListP
 
       {/* Chat List */}
       <div className="flex-1 overflow-y-auto">
-        {filteredChatRooms.length > 0 ? (
+        {isLoading ? (
+          <div className="p-8 text-center text-muted-foreground">
+            로딩 중...
+          </div>
+        ) : error ? (
+          <div className="p-8 text-center text-destructive">{error}</div>
+        ) : filteredChatRooms.length > 0 ? (
           filteredChatRooms.map((room) => (
             <div
-              key={room.id}
+              key={room.chatRoomId}
               className="p-4 border-b hover:bg-muted/50 cursor-pointer transition-colors"
-              onClick={() => onSelectChat(room.id)}
+              onClick={() => onSelectChat(room.roomName, room.chatRoomId)}
             >
               <div className="flex items-center space-x-4">
                 <div className="relative">
                   <Avatar>
-                    <AvatarImage src={room.avatar || "/placeholder.svg"} alt={room.name} />
-                    <AvatarFallback>{room.name[0]}</AvatarFallback>
+                    <AvatarImage
+                      src={room.avatar || "/placeholder.svg"}
+                      alt={room.roomName}
+                    />
+                    <AvatarFallback>{room.roomName[0]}</AvatarFallback>
                   </Avatar>
                   {room.online && (
                     <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background"></span>
@@ -142,33 +156,39 @@ export default function ChatList({ username, onSelectChat, onLogout }: ChatListP
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-medium truncate">{room.name}</h3>
-                    <span className="text-xs text-muted-foreground">{room.time}</span>
+                    <h3 className="font-medium truncate">{room.roomName}</h3>
+                    <span className="text-xs text-muted-foreground">
+                      {room.lastMessageDateTime}
+                    </span>
                   </div>
-                  <p className="text-sm text-muted-foreground truncate">{room.lastMessage}</p>
+                  <p className="text-sm text-muted-foreground truncate">
+                    {room.lastMessage}
+                  </p>
                 </div>
-                {room.unread > 0 && (
+                {room.unreadMessageCount > 0 && (
                   <Badge
                     variant="destructive"
                     className="rounded-full h-5 min-w-[20px] flex items-center justify-center"
                   >
-                    {room.unread}
+                    {room.unreadMessageCount}
                   </Badge>
                 )}
               </div>
             </div>
           ))
         ) : (
-          <div className="p-8 text-center text-muted-foreground">검색 결과가 없습니다</div>
+          <div className="p-8 text-center text-muted-foreground">
+            검색 결과가 없습니다
+          </div>
         )}
       </div>
 
       {/* New Chat Button */}
       <div className="p-4 border-t">
-        <Button className="w-full" variant="default">
+        <Button className="w-full" variant="default" onClick={onNewChat}>
           <Plus className="h-4 w-4 mr-2" />새 대화
         </Button>
       </div>
     </div>
-  )
+  );
 }

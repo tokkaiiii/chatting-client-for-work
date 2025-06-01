@@ -6,11 +6,13 @@ import SignupForm from "@/components/signup-form"
 import ChatList from "@/components/chat-list"
 import ChatInterface from "@/components/chat-interface"
 import { useMediaQuery } from "@/hooks/use-media-query"
+import { removeToken } from "@/lib/auth"
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<string | null>(null)
   const [currentView, setCurrentView] = useState<"login" | "signup" | "chatList" | "chat">("login")
-  const [selectedChatId, setSelectedChatId] = useState<string | null>(null)
+  const [selectedChatRoomName, setSelectedChatRoomName] = useState<string | null>(null)
+  const [selectedChatRoomId, setSelectedChatRoomId] = useState<string | null>(null)
 
   // 반응형 디자인을 위한 미디어 쿼리
   const isMobile = useMediaQuery("(max-width: 768px)")
@@ -34,13 +36,16 @@ export default function App() {
   }
 
   const handleLogout = () => {
+    removeToken()
     setCurrentUser(null)
-    setSelectedChatId(null)
+    setSelectedChatRoomName (null)
+    setSelectedChatRoomId(null)
     setCurrentView("login")
   }
 
-  const handleSelectChat = (chatId: string) => {
-    setSelectedChatId(chatId)
+  const handleSelectChat = (chatRoomName: string, chatRoomId: string) => {
+    setSelectedChatRoomName(chatRoomName)
+    setSelectedChatRoomId(chatRoomId)
     if (isMobile) {
       setCurrentView("chat")
     }
@@ -62,8 +67,13 @@ export default function App() {
 
   // 모바일 화면에서는 채팅 목록과 채팅 인터페이스를 전환
   if (isMobile) {
-    if (currentView === "chat" && selectedChatId) {
-      return <ChatInterface currentUser={currentUser} chatId={selectedChatId} onBack={handleBackToList} />
+    if (currentView === "chat" && selectedChatRoomName && selectedChatRoomId) {
+      return <ChatInterface 
+        currentUser={currentUser} 
+        chatRoomName={selectedChatRoomName} 
+        chatRoomId={selectedChatRoomId}
+        onBack={handleBackToList} 
+      />
     }
 
     return <ChatList username={currentUser} onSelectChat={handleSelectChat} onLogout={handleLogout} />
@@ -76,8 +86,13 @@ export default function App() {
         <ChatList username={currentUser} onSelectChat={handleSelectChat} onLogout={handleLogout} />
       </div>
       <div className="w-2/3">
-        {selectedChatId ? (
-          <ChatInterface currentUser={currentUser} chatId={selectedChatId} onBack={handleBackToList} />
+        {selectedChatRoomName && selectedChatRoomId ? (
+          <ChatInterface 
+            currentUser={currentUser} 
+            chatRoomName={selectedChatRoomName} 
+            chatRoomId={selectedChatRoomId}
+            onBack={handleBackToList} 
+          />
         ) : (
           <div className="flex items-center justify-center h-full bg-muted/20">
             <div className="text-center">

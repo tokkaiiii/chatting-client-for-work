@@ -1,49 +1,89 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Eye, EyeOff, MessageCircle, Check, X } from "lucide-react"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Eye, EyeOff, MessageCircle, Check, X } from "lucide-react";
+import { config } from "@/lib/config";
 
 interface SignupFormProps {
-  onSignup: (username: string) => void
-  onSwitchToLogin: () => void
+  onSignup: (username: string) => void;
+  onSwitchToLogin: () => void;
 }
 
-export default function SignupForm({ onSignup, onSwitchToLogin }: SignupFormProps) {
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [agreeToTerms, setAgreeToTerms] = useState(false)
+export default function SignupForm({
+  onSignup,
+  onSwitchToLogin,
+}: SignupFormProps) {
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     confirmPassword: "",
-  })
+  });
 
   const passwordRequirements = [
     { text: "최소 8자 이상", met: formData.password.length >= 8 },
     { text: "대문자 포함", met: /[A-Z]/.test(formData.password) },
     { text: "소문자 포함", met: /[a-z]/.test(formData.password) },
     { text: "숫자 포함", met: /\d/.test(formData.password) },
-  ]
+  ];
 
-  const isPasswordValid = passwordRequirements.every((req) => req.met)
-  const doPasswordsMatch = formData.password === formData.confirmPassword && formData.confirmPassword !== ""
+  const isPasswordValid = passwordRequirements.every((req) => req.met);
+  const doPasswordsMatch =
+    formData.password === formData.confirmPassword &&
+    formData.confirmPassword !== "";
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (formData.name && formData.email && isPasswordValid && doPasswordsMatch && agreeToTerms) {
-      onSignup(formData.name)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (
+      formData.name &&
+      formData.email &&
+      isPasswordValid &&
+      doPasswordsMatch &&
+      agreeToTerms
+    ) {
+      const response = await fetch(`${config.apiUrl}/client/signup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          username: formData.name,
+          password: formData.password,
+        }),
+      });
+      if (response.ok) {
+        onSignup(formData.name);
+      } else {
+        console.error("회원가입 실패");
+        alert("회원가입 실패");
+      }
     }
-  }
+  };
 
-  const isFormValid = formData.name && formData.email && isPasswordValid && doPasswordsMatch && agreeToTerms
+  const isFormValid =
+    formData.name &&
+    formData.email &&
+    isPasswordValid &&
+    doPasswordsMatch &&
+    agreeToTerms;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-100 p-4">
@@ -66,7 +106,9 @@ export default function SignupForm({ onSignup, onSwitchToLogin }: SignupFormProp
                 type="text"
                 placeholder="홍길동"
                 value={formData.name}
-                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+                }
                 required
               />
             </div>
@@ -78,7 +120,9 @@ export default function SignupForm({ onSignup, onSwitchToLogin }: SignupFormProp
                 type="email"
                 placeholder="your@email.com"
                 value={formData.email}
-                onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, email: e.target.value }))
+                }
                 required
               />
             </div>
@@ -91,7 +135,12 @@ export default function SignupForm({ onSignup, onSwitchToLogin }: SignupFormProp
                   type={showPassword ? "text" : "password"}
                   placeholder="비밀번호를 입력하세요"
                   value={formData.password}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      password: e.target.value,
+                    }))
+                  }
                   required
                 />
                 <Button
@@ -115,9 +164,15 @@ export default function SignupForm({ onSignup, onSwitchToLogin }: SignupFormProp
                   {passwordRequirements.map((req, index) => (
                     <div
                       key={index}
-                      className={`flex items-center space-x-2 ${req.met ? "text-green-600" : "text-red-500"}`}
+                      className={`flex items-center space-x-2 ${
+                        req.met ? "text-green-600" : "text-red-500"
+                      }`}
                     >
-                      {req.met ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                      {req.met ? (
+                        <Check className="h-3 w-3" />
+                      ) : (
+                        <X className="h-3 w-3" />
+                      )}
                       <span>{req.text}</span>
                     </div>
                   ))}
@@ -133,7 +188,12 @@ export default function SignupForm({ onSignup, onSwitchToLogin }: SignupFormProp
                   type={showConfirmPassword ? "text" : "password"}
                   placeholder="비밀번호를 다시 입력하세요"
                   value={formData.confirmPassword}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      confirmPassword: e.target.value,
+                    }))
+                  }
                   required
                 />
                 <Button
@@ -154,10 +214,20 @@ export default function SignupForm({ onSignup, onSwitchToLogin }: SignupFormProp
               {/* Password Match Indicator */}
               {formData.confirmPassword && (
                 <div
-                  className={`flex items-center space-x-2 text-xs ${doPasswordsMatch ? "text-green-600" : "text-red-500"}`}
+                  className={`flex items-center space-x-2 text-xs ${
+                    doPasswordsMatch ? "text-green-600" : "text-red-500"
+                  }`}
                 >
-                  {doPasswordsMatch ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
-                  <span>{doPasswordsMatch ? "비밀번호가 일치합니다" : "비밀번호가 일치하지 않습니다"}</span>
+                  {doPasswordsMatch ? (
+                    <Check className="h-3 w-3" />
+                  ) : (
+                    <X className="h-3 w-3" />
+                  )}
+                  <span>
+                    {doPasswordsMatch
+                      ? "비밀번호가 일치합니다"
+                      : "비밀번호가 일치하지 않습니다"}
+                  </span>
                 </div>
               )}
             </div>
@@ -166,10 +236,13 @@ export default function SignupForm({ onSignup, onSwitchToLogin }: SignupFormProp
               <Checkbox
                 id="terms"
                 checked={agreeToTerms}
-                onCheckedChange={(checked) => setAgreeToTerms(checked as boolean)}
+                onCheckedChange={(checked) =>
+                  setAgreeToTerms(checked as boolean)
+                }
               />
               <Label htmlFor="terms" className="text-sm">
-                <span>이용약관</span>과 <span>개인정보처리방침</span>에 동의합니다
+                <span>이용약관</span>과 <span>개인정보처리방침</span>에
+                동의합니다
               </Label>
             </div>
 
@@ -181,12 +254,16 @@ export default function SignupForm({ onSignup, onSwitchToLogin }: SignupFormProp
         <CardFooter className="flex flex-col space-y-2">
           <div className="text-sm text-center text-muted-foreground">
             이미 계정이 있으신가요?{" "}
-            <Button variant="link" className="p-0 h-auto font-normal" onClick={onSwitchToLogin}>
+            <Button
+              variant="link"
+              className="p-0 h-auto font-normal"
+              onClick={onSwitchToLogin}
+            >
               로그인
             </Button>
           </div>
         </CardFooter>
       </Card>
     </div>
-  )
+  );
 }

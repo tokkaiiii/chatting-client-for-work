@@ -1,39 +1,78 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { Eye, EyeOff, MessageCircle } from "lucide-react"
-
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Eye, EyeOff, MessageCircle } from "lucide-react";
+import { config } from "@/lib/config";
+import { setToken, setUsername } from "@/lib/auth";
 interface LoginFormProps {
-  onLogin: (username: string) => void
-  onSwitchToSignup: () => void
+  onLogin: (username: string) => void;
+  onSwitchToSignup: () => void;
 }
 
-export default function LoginForm({ onLogin, onSwitchToSignup }: LoginFormProps) {
-  const [showPassword, setShowPassword] = useState(false)
+export default function LoginForm({
+  onLogin,
+  onSwitchToSignup,
+}: LoginFormProps) {
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-  })
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    // 간단한 로그인 시뮬레이션
-    if (formData.email && formData.password) {
-      const username = formData.email.split("@")[0] || formData.email
-      onLogin(username)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`${config.apiUrl}/client/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Login failed");
+      }
+
+      const responseToken = await fetch(`${config.apiUrl}/client/issueToken`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const data = await response.json();
+      const tokenData = await responseToken.json();
+      setToken(tokenData.accessToken);
+      setUsername(data.username);
+      onLogin(data.username);
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("로그인 실패");
     }
-  }
+  };
 
   const handleDemoLogin = () => {
-    onLogin("데모사용자")
-  }
+    onLogin("데모사용자");
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -44,7 +83,9 @@ export default function LoginForm({ onLogin, onSwitchToSignup }: LoginFormProps)
               <MessageCircle className="h-6 w-6 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">채팅에 참여하세요</CardTitle>
+          <CardTitle className="text-2xl font-bold">
+            채팅에 참여하세요
+          </CardTitle>
           <CardDescription>계정에 로그인하여 대화를 시작하세요</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -56,7 +97,9 @@ export default function LoginForm({ onLogin, onSwitchToSignup }: LoginFormProps)
                 type="email"
                 placeholder="your@email.com"
                 value={formData.email}
-                onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, email: e.target.value }))
+                }
                 required
               />
             </div>
@@ -66,9 +109,14 @@ export default function LoginForm({ onLogin, onSwitchToSignup }: LoginFormProps)
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="비밀번호를 입력하세요"
+                  placeholder="••••••••"
                   value={formData.password}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      password: e.target.value,
+                    }))
+                  }
                   required
                 />
                 <Button
@@ -96,23 +144,33 @@ export default function LoginForm({ onLogin, onSwitchToSignup }: LoginFormProps)
               <Separator className="w-full" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">또는</span>
+              <span className="bg-background px-2 text-muted-foreground">
+                또는
+              </span>
             </div>
           </div>
 
-          <Button variant="outline" className="w-full" onClick={handleDemoLogin}>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={handleDemoLogin}
+          >
             데모로 체험하기
           </Button>
         </CardContent>
         <CardFooter className="flex flex-col space-y-2">
           <div className="text-sm text-center text-muted-foreground">
             계정이 없으신가요?{" "}
-            <Button variant="link" className="p-0 h-auto font-normal" onClick={onSwitchToSignup}>
+            <Button
+              variant="link"
+              className="p-0 h-auto font-normal"
+              onClick={onSwitchToSignup}
+            >
               회원가입
             </Button>
           </div>
         </CardFooter>
       </Card>
     </div>
-  )
+  );
 }
