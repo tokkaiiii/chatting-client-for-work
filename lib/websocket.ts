@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { getToken, getUserId, getUsername } from './auth';
+import { getToken, getUserId} from './auth';
 import type { Client, IMessage, IFrame } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
