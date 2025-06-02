@@ -12,6 +12,7 @@ import ImageModal from "@/components/image-modal"
 import ImagePreview from "@/components/image-preview"
 import { useWebSocket, WebSocketMessage } from "@/lib/websocket"
 import { config } from "@/lib/config"
+import Image from "next/image"
 
 interface Message {
   id: number
@@ -58,7 +59,7 @@ export default function ChatInterface({ currentUser, chatRoomName, chatRoomId, o
         id: Date.now(), // 고유한 ID 생성
         user: lastMessage.sender,
         avatar: "/placeholder.svg?height=40&width=40",
-        message: lastMessage.content,
+        message: lastMessage.message,
         time: timeString,
         isMe: lastMessage.sender === currentUser,
         type: "text",
@@ -117,9 +118,9 @@ export default function ChatInterface({ currentUser, chatRoomName, chatRoomId, o
     } else if (newMessage.trim()) {
       // 텍스트 메시지 전송
       const wsMessage: WebSocketMessage = {
-        type: "CHAT",
+        chatRoomId,
         sender: currentUser,
-        content: newMessage,
+        message: newMessage,
         timestamp: new Date().toISOString(),
       }
       
@@ -193,13 +194,17 @@ export default function ChatInterface({ currentUser, chatRoomName, chatRoomId, o
                 {message.type === "text" ? (
                   <p className="text-sm">{message.message}</p>
                 ) : (
-                  <img
-                    src={message.imageUrl || "/placeholder.svg"}
-                    alt="Shared image"
-                    className="max-w-xs max-h-60 rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                    onClick={() => handleImageClick(message.imageUrl!, "Shared image")}
-                    crossOrigin="anonymous"
-                  />
+                  <div className="relative max-w-xs max-h-60">
+                    <Image
+                      src={message.imageUrl || "/placeholder.svg"}
+                      alt="Shared image"
+                      width={300}
+                      height={300}
+                      className="rounded-lg cursor-pointer hover:opacity-90 transition-opacity object-contain"
+                      onClick={() => handleImageClick(message.imageUrl!, "Shared image")}
+                      crossOrigin="anonymous"
+                    />
+                  </div>
                 )}
               </div>
               <span className="text-xs text-muted-foreground">{message.time}</span>

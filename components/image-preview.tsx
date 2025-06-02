@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
+import Image from "next/image"
 
 interface ImagePreviewProps {
   file: File
@@ -13,12 +14,15 @@ export default function ImagePreview({ file, onRemove }: ImagePreviewProps) {
 
   return (
     <div className="relative inline-block">
-      <img
-        src={imageUrl || "/placeholder.svg"}
-        alt="Preview"
-        className="w-20 h-20 object-cover rounded-lg border"
-        crossOrigin="anonymous"
-      />
+      <div className="relative w-20 h-20">
+        <Image
+          src={imageUrl || "/placeholder.svg"}
+          alt="Preview"
+          fill
+          className="object-cover rounded-lg border"
+          crossOrigin="anonymous"
+        />
+      </div>
       <Button
         variant="destructive"
         size="icon"

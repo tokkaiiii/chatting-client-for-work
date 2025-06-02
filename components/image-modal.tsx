@@ -3,6 +3,7 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { X, Download } from "lucide-react"
+import Image from "next/image"
 
 interface ImageModalProps {
   isOpen: boolean
@@ -33,12 +34,15 @@ export default function ImageModal({ isOpen, onClose, imageUrl, alt }: ImageModa
               <X className="h-4 w-4" />
             </Button>
           </div>
-          <img
-            src={imageUrl || "/placeholder.svg"}
-            alt={alt}
-            className="w-full h-auto max-h-[90vh] object-contain rounded-lg"
-            crossOrigin="anonymous"
-          />
+          <div className="relative w-full h-[90vh]">
+            <Image
+              src={imageUrl || "/placeholder.svg"}
+              alt={alt}
+              fill
+              className="object-contain rounded-lg"
+              crossOrigin="anonymous"
+            />
+          </div>
         </div>
       </DialogContent>
     </Dialog>
