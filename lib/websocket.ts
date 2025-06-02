@@ -4,10 +4,10 @@ import type { Client, IMessage, IFrame } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
 export interface WebSocketMessage {
-  type: 'CHAT' | 'JOIN' | 'LEAVE';
+  chatRoomId: string;
   sender: string;
-  content: string;
-  timestamp: string;
+  message: string;
+  timestamp?: string;
 }
 
 export interface WebSocketHook {
@@ -129,7 +129,7 @@ export const useWebSocket = (url: string, chatRoomId: string): WebSocketHook => 
         body: JSON.stringify({
           chatRoomId,
           sender: getUserId(),
-          message: message.content
+          message: message.message
         })
       });
     } else {
